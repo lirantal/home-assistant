@@ -1,0 +1,100 @@
+# Add the following to configuration.yml
+# These make use of the new REST integration to:
+# 1. poll every 5 minutes for
+# 2. trains from Ashdod to Tel Aviv
+# 3.1. departure for next 3 trains from now (first http call) 
+# 3.2. departure for next 3 trains tomorrow at 8am (second http call)
+# 4. create sensors 
+
+rest:
+  - resource: "https://israelrail.azurefd.net/rjpa-prod/api/v1/timetable/searchTrainLuzForDateTime"
+    method: GET
+    params:
+      fromStation: 5800
+      toStation: 4600
+      systemType: 1
+      scheduleType: 1
+      languageId: Hebrew
+      date: >
+        {{ now().strftime('%Y') ~  '-' ~ now().strftime('%m') ~  '-' ~ now().strftime('%d') }}
+      hour: >
+        {{ now().strftime('%H') ~  ':' ~ now().strftime('%M') }}
+    headers:
+      Accept: "application/json"
+      Content-Type: "application/json"
+      ocp-apim-subscription-key: "4b0d355121fe4e0bb3d86e902efe9f20"
+    sensor:
+      - name: "Next Train 1"
+        unique_id: "next_train_1"
+        value_template: >-
+            {%- set indexStart = value_json["result"]["startFromIndex"] + 1 -%}
+            {%- if ((indexStart) < (value_json["result"]["travels"] | length )) -%}
+            {{ strptime(value_json["result"]["travels"][indexStart]["departureTime"], '%Y-%m-%dT%H:%M:%S') }}
+            {%- else -%}
+            Not available
+            {%- endif -%}
+      - name: "Next Train 2"
+        unique_id: "next_train_2"
+        value_template: >-
+            {%- set indexStart = value_json["result"]["startFromIndex"] + 2 -%}
+            {%- if ((indexStart ) < (value_json["result"]["travels"] | length )) -%}
+            {{ strptime(value_json["result"]["travels"][indexStart]["departureTime"], '%Y-%m-%dT%H:%M:%S') }}
+            {%- else -%}
+            Not available
+            {%- endif -%}
+      - name: "Next Train 3"
+        unique_id: "next_train_3"
+        value_template: >-
+            {%- set indexStart = value_json["result"]["startFromIndex"] + 3 -%}
+            {%- if ((indexStart ) < (value_json["result"]["travels"] | length )) -%}
+            {{ strptime(value_json["result"]["travels"][indexStart]["departureTime"], '%Y-%m-%dT%H:%M:%S') }}
+            {%- else -%}
+            Not available
+            {%- endif -%}
+    scan_interval: 300
+
+  - resource: "https://israelrail.azurefd.net/rjpa-prod/api/v1/timetable/searchTrainLuzForDateTime"
+    method: GET
+    params:
+      fromStation: 5800
+      toStation: 4600
+      systemType: 1
+      scheduleType: 1
+      languageId: Hebrew
+      date: >
+        {{ (now().date() + timedelta(days=1)) | string }}
+      hour: >
+        08:00
+    headers:
+      Accept: "application/json"
+      Content-Type: "application/json"
+      ocp-apim-subscription-key: "4b0d355121fe4e0bb3d86e902efe9f20"
+    sensor:
+      - name: "Tomorrow Train 1"
+        unique_id: "tomorrow_train_1"
+        value_template: >-
+            {%- set indexStart = value_json["result"]["startFromIndex"] + 1 -%}
+            {%- if ((indexStart) < (value_json["result"]["travels"] | length )) -%}
+            {{ strptime(value_json["result"]["travels"][indexStart]["departureTime"], '%Y-%m-%dT%H:%M:%S') }}
+            {%- else -%}
+            Not available
+            {%- endif -%}
+      - name: "Tomorrow Train 2"
+        unique_id: "tomorrow_train_2"
+        value_template: >-
+            {%- set indexStart = value_json["result"]["startFromIndex"] + 2 -%}
+            {%- if ((indexStart ) < (value_json["result"]["travels"] | length )) -%}
+            {{ strptime(value_json["result"]["travels"][indexStart]["departureTime"], '%Y-%m-%dT%H:%M:%S') }}
+            {%- else -%}
+            Not available
+            {%- endif -%}
+      - name: "Tomorrow Train 3"
+        unique_id: "tomorrow_train_3"
+        value_template: >-
+            {%- set indexStart = value_json["result"]["startFromIndex"] + 3 -%}
+            {%- if ((indexStart ) < (value_json["result"]["travels"] | length )) -%}
+            {{ strptime(value_json["result"]["travels"][indexStart]["departureTime"], '%Y-%m-%dT%H:%M:%S') }}
+            {%- else -%}
+            Not available
+            {%- endif -%}
+    scan_interval: 300
